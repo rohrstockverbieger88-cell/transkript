@@ -124,6 +124,9 @@ async function run() {
           setProgress('🧠 KI-Modell wird geladen (nur beim ersten Mal) …', data.loaded / data.total,
             `${data.file}: ${fmtSize(data.loaded)} / ${fmtSize(data.total)}`);
         }
+        if (data.type === 'status' && data.message) {
+          setProgress(data.message, 1, 'Einen kurzen Moment …');
+        }
       });
     }
     setProgress('🧠 KI-Modell wird vorbereitet …', 0);

@@ -14,21 +14,30 @@ async function load(model, device, baseURI) {
     env.remotePathTemplate = '{model}/resolve/{revision}/';
   }
 
-  const key = model + device;
+  // For whisper-base (q8 int8), wasm is instant, ultra-stable, and doesn't freeze on GPU shader compile
+  const targetDevice = isLocal ? 'wasm' : device;
+  const key = model + targetDevice;
   if (asr && loadedKey === key) return;
 
   const dtype = isLocal
     ? 'q8'
-    : (device === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q4' } : 'q8');
+    : (targetDevice === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q4' } : 'q8');
+
+  self.postMessage({ type: 'status', message: '🧠 KI-Modell wird geladen …' });
 
   asr = await pipeline('automatic-speech-recognition', model, {
-    device,
+    device: targetDevice,
     dtype,
     progress_callback: (p) => {
-      if (p.status === 'progress') self.postMessage({ type: 'download', file: p.file, loaded: p.loaded, total: p.total });
+      if (p.status === 'progress') {
+        self.postMessage({ type: 'download', file: p.file, loaded: p.loaded, total: p.total });
+      } else if (p.status === 'done' || p.status === 'ready') {
+        self.postMessage({ type: 'status', message: '🧠 KI-Modell wird im Speicher initialisiert …' });
+      }
     },
   });
   loadedKey = key;
+  self.postMessage({ type: 'status', message: '✅ KI-Modell bereit!' });
 }
 
 // Whisper language ID: one decoder step after <|startoftranscript|>,
