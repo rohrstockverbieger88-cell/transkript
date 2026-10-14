@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transkript – Video & Audio kostenlos in Text umwandeln</title>
+  <meta name="description" content="Kostenloses Online-Tool: Video- oder Audiodatei hochladen und automatisch ein Transkript mit Zeitangaben erstellen. Läuft komplett im Browser – deine Datei verlässt nie deinen Computer." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="hero">
+    <div class="badge">🔒 100 % privat · läuft in deinem Browser</div>
+    <h1>Video & Audio <span class="grad">in Text</span> verwandeln</h1>
+    <p class="sub">Datei reinziehen, Transkript mit Zeitangaben erhalten, kopieren oder als Word / TXT speichern. Kostenlos, ohne Anmeldung.</p>
+  </header>
+
+  <main class="container">
+    <section class="card" id="upload-card">
+      <label id="dropzone" class="dropzone" for="file-input">
+        <input type="file" id="file-input" accept="audio/*,video/*,.mkv,.m4a,.flac,.ogg,.opus,.webm,.mov,.avi,.wmv" hidden />
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        </div>
+        <p class="dz-title">Datei hierher ziehen oder <u>auswählen</u></p>
+        <p class="dz-hint">MP4, MOV, MKV, MP3, WAV, M4A … · max. 2 Stunden · max. 8 GB</p>
+      </label>
+
+      <div id="file-info" class="file-info hidden">
+        <div class="fi-icon">🎬</div>
+        <div class="fi-text">
+          <strong id="file-name"></strong>
+          <span id="file-meta"></span>
+        </div>
+        <button id="file-remove" class="icon-btn" title="Entfernen">✕</button>
+      </div>
+
+      <div class="settings">
+        <div class="field">
+          <label for="model-select">Qualität</label>
+          <select id="model-select">
+            <option value="onnx-community/whisper-base">Schnell (Basis)</option>
+            <option value="onnx-community/whisper-small" selected>Ausgewogen (Small)</option>
+            <option value="onnx-community/whisper-large-v3-turbo" data-gpu="1">Beste Qualität (Large Turbo · nur mit WebGPU)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="lang-select">Sprache</label>
+          <select id="lang-select">
+            <option value="">Automatisch erkennen</option>
+            <option value="german">Deutsch</option>
+            <option value="english">Englisch</option>
+            <option value="french">Französisch</option>
+            <option value="spanish">Spanisch</option>
+            <option value="italian">Italienisch</option>
+            <option value="dutch">Niederländisch</option>
+            <option value="polish">Polnisch</option>
+            <option value="turkish">Türkisch</option>
+            <option value="russian">Russisch</option>
+          </select>
+        </div>
+      </div>
+      <p id="device-info" class="device-info"></p>
+
+      <button id="start-btn" class="btn primary big" disabled>✨ Transkript erstellen</button>
+      <p id="error" class="error hidden" role="alert"></p>
+    </section>
+
+    <section id="progress-card" class="card hidden">
+      <div class="progress-head">
+        <span id="stage">Vorbereiten …</span>
+        <span id="percent">0 %</span>
+      </div>
+      <div class="bar"><div id="bar-fill"></div></div>
+      <p id="eta" class="eta"></p>
+      <button id="cancel-btn" class="btn ghost">Abbrechen</button>
+    </section>
+
+    <section id="result-card" class="card hidden">
+      <div class="result-head">
+        <h2>Transkript</h2>
+        <label class="toggle"><input type="checkbox" id="ts-toggle" checked /><span></span> Zeitangaben</label>
+      </div>
+      <textarea id="output" spellcheck="false" aria-label="Transkript"></textarea>
+      <div class="actions">
+        <button id="copy-btn" class="btn">📋 Kopieren</button>
+        <button id="txt-btn" class="btn">📄 Als TXT speichern</button>
+        <button id="docx-btn" class="btn primary">📝 Als Word speichern</button>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="feat"><b>🔒 Privat</b><p>Die Datei wird nicht hochgeladen – alles passiert lokal auf deinem Gerät.</p></div>
+      <div class="feat"><b>🌍 Viele Sprachen</b><p>Die Sprache wird automatisch erkannt (KI-Modell Whisper).</p></div>
+      <div class="feat"><b>⏱️ Zeitangaben</b><p>Jeder Abschnitt mit Zeitstempel – ideal für Interviews & Videos.</p></div>
+    </section>
+  </main>
+
+  <footer>Hinweis: Beim ersten Mal wird das KI-Modell geladen (ca. 80–800 MB) und danach im Browser gespeichert. Chrome oder Edge empfohlen.</footer>
+  <div id="toast" class="toast"></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
