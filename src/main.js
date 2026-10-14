@@ -29,7 +29,6 @@ el.device.textContent = hasGPU
   : '🐢 Kein WebGPU gefunden – läuft über den Prozessor (langsamer). Tipp: aktuelles Chrome/Edge verwenden.';
 if (!hasGPU) {
   el.model.querySelector('[data-gpu]').disabled = true;
-  el.model.value = 'onnx-community/whisper-base';
 }
 
 const fmtSize = (b) => (b > 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + ' GB' : (b / 1024 ** 2).toFixed(1) + ' MB');
@@ -130,7 +129,12 @@ async function run() {
     setProgress('🧠 KI-Modell wird vorbereitet …', 0);
     for (let attempt = 1; ; attempt++) {
       try {
-        worker.postMessage({ type: 'load', model: el.model.value, device: hasGPU ? 'webgpu' : 'wasm' });
+        worker.postMessage({
+          type: 'load',
+          model: el.model.value,
+          device: hasGPU ? 'webgpu' : 'wasm',
+          baseURI: document.baseURI
+        });
         await waitFor('ready');
         break;
       } catch (e) {

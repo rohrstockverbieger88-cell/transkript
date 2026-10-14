@@ -1,17 +1,29 @@
-// Whisper speech recognition running in a Web Worker (transformers.js).
-import { pipeline, Tensor } from '@huggingface/transformers';
+import { pipeline, Tensor, env } from '@huggingface/transformers';
 
 let asr = null;
 let loadedKey = '';
 
-async function load(model, device) {
+async function load(model, device, baseURI) {
+  const isLocal = model === 'whisper-base';
+  if (isLocal) {
+    const base = baseURI || self.location.origin;
+    env.remoteHost = new URL('models/', base).href;
+    env.remotePathTemplate = '{model}/';
+  } else {
+    env.remoteHost = 'https://huggingface.co/';
+    env.remotePathTemplate = '{model}/resolve/{revision}/';
+  }
+
   const key = model + device;
   if (asr && loadedKey === key) return;
+
+  const dtype = isLocal
+    ? 'q8'
+    : (device === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q4' } : 'q8');
+
   asr = await pipeline('automatic-speech-recognition', model, {
     device,
-    dtype: device === 'webgpu'
-      ? { encoder_model: 'fp32', decoder_model_merged: 'q4' }
-      : 'q8',
+    dtype,
     progress_callback: (p) => {
       if (p.status === 'progress') self.postMessage({ type: 'download', file: p.file, loaded: p.loaded, total: p.total });
     },
@@ -49,7 +61,7 @@ async function detectLanguage(audio) {
 self.onmessage = async ({ data }) => {
   try {
     if (data.type === 'load') {
-      await load(data.model, data.device);
+      await load(data.model, data.device, data.baseURI);
       self.postMessage({ type: 'ready' });
     } else if (data.type === 'segment') {
       const opts = { return_timestamps: true, chunk_length_s: 30, stride_length_s: 5, task: 'transcribe' };
