@@ -128,8 +128,17 @@ async function run() {
       });
     }
     setProgress('🧠 KI-Modell wird vorbereitet …', 0);
-    worker.postMessage({ type: 'load', model: el.model.value, device: hasGPU ? 'webgpu' : 'wasm' });
-    await waitFor('ready');
+    for (let attempt = 1; ; attempt++) {
+      try {
+        worker.postMessage({ type: 'load', model: el.model.value, device: hasGPU ? 'webgpu' : 'wasm' });
+        await waitFor('ready');
+        break;
+      } catch (e) {
+        if (attempt >= 3 || !/fetch|network/i.test(e.message)) throw e;
+        setProgress(`🔁 Download unterbrochen – neuer Versuch (${attempt + 1}/3) …`, 0);
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
+    }
     if (cancelled) return;
 
     // 3) transcribe segment by segment
@@ -157,7 +166,11 @@ async function run() {
     console.error(e);
     el.progress.classList.add('hidden');
     el.upload.classList.remove('hidden');
-    showError('Fehler: ' + (e.message || e) + (/memory|allocat/i.test(e.message) ? ' – zu wenig Arbeitsspeicher. Andere Tabs schließen oder kleinere Qualität wählen.' : ''));
+    const msg = e.message || String(e);
+    let hint = '';
+    if (/memory|allocat/i.test(msg)) hint = ' – zu wenig Arbeitsspeicher. Andere Tabs schließen oder kleinere Qualität wählen.';
+    else if (/fetch|network/i.test(msg)) hint = ' – das KI-Modell konnte nicht heruntergeladen werden. Bitte Internetverbindung prüfen, Werbeblocker/VPN für diese Seite deaktivieren und erneut versuchen.';
+    showError(`Fehler bei „${el.stage.textContent.replace(/[^\p{L}\s-]/gu, '').trim()}“: ${msg}${hint}`);
   }
 }
 

@@ -4,7 +4,7 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
 
-const CORE = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm';
+const CORE = new URL('ffmpeg', document.baseURI).href;
 let ffmpeg = null;
 
 async function getFFmpeg() {
