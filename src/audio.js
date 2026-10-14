@@ -61,13 +61,23 @@ export async function extractAudio(file, duration, onProgress) {
     await ff.createDir(dir).catch(() => {});
     await ff.mount('WORKERFS', { files: [file] }, dir);
     const code = await ff.exec([
-      '-hide_banner', '-i', `${dir}/${file.name}`,
-      '-vn', '-ac', '1', '-ar', '16000', '-t', '7200',
-      '-f', 's16le', '-acodec', 'pcm_s16le', 'out.pcm',
+      '-y',
+      '-hide_banner',
+      '-i', `${dir}/${file.name}`,
+      '-vn',
+      '-ac', '1',
+      '-ar', '16000',
+      '-t', '7200',
+      '-f', 's16le',
+      '-acodec', 'pcm_s16le',
+      'out.pcm',
     ]);
     if (code !== 0) throw new Error('Die Tonspur konnte nicht gelesen werden. Ist das Format unterstützt?');
     const data = await ff.readFile('out.pcm');
-    await ff.deleteFile('out.pcm');
+    await ff.deleteFile('out.pcm').catch(() => {});
+    if (!data || data.byteLength === 0) {
+      throw new Error('Es konnte kein Ton aus dieser Datei gelesen werden (0 Bytes Audiodaten). Bitte prüfe, ob die Datei eine Tonspur enthält.');
+    }
     const pcm = new Int16Array(data.buffer, data.byteOffset, data.byteLength >> 1);
     const out = new Float32Array(pcm.length);
     for (let i = 0; i < pcm.length; i++) out[i] = pcm[i] / 32768;

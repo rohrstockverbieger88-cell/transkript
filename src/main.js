@@ -146,8 +146,12 @@ async function run() {
     if (cancelled) return;
 
     // 3) transcribe segment by segment
-    el.result.classList.remove('hidden');
     const total = audio.length;
+    if (!total) {
+      throw new Error('Aus der Datei konnte kein Ton extrahiert werden (0 Sekunden Audio).');
+    }
+    el.result.classList.remove('hidden');
+    el.output.placeholder = 'Transkription läuft … der Text erscheint hier fortlaufend.';
     const segLen = SEGMENT_SEC * SR;
     const t0 = performance.now();
     for (let off = 0, id = 0; off < total; off += segLen, id++) {
@@ -155,17 +159,23 @@ async function run() {
       const seg = audio.slice(off, Math.min(off + segLen, total));
       worker.postMessage({ type: 'segment', id, audio: seg, offset: off / SR, language: el.lang.value || null }, [seg.buffer]);
       const res = await waitFor('segment');
-      chunks.push(...res.chunks);
-      render();
-      el.output.scrollTop = el.output.scrollHeight;
+      if (res.chunks && res.chunks.length > 0) {
+        chunks.push(...res.chunks);
+        render();
+        el.output.scrollTop = el.output.scrollHeight;
+      }
       const done = Math.min(off + segLen, total) / total;
       const elapsed = (performance.now() - t0) / 1000;
       const remain = elapsed / done - elapsed;
       setProgress('✍️ Transkript wird erstellt …', done, `Noch ca. ${fmtTime(remain)} · ${fmtTime((off + segLen) / SR)} von ${fmtTime(total / SR)}`);
     }
-    setProgress('✅ Fertig!', 1);
-    toast('Transkript fertig!');
-    setTimeout(() => { el.progress.classList.add('hidden'); el.upload.classList.remove('hidden'); }, 1200);
+    if (chunks.length === 0) {
+      showError('Es konnte keine gesprochene Sprache im Video erkannt werden. Bitte prüfe, ob die Datei Ton enthält und die Sprache passend eingestellt ist.');
+    } else {
+      setProgress('✅ Fertig!', 1);
+      toast('Transkript fertig!');
+      setTimeout(() => { el.progress.classList.add('hidden'); el.upload.classList.remove('hidden'); }, 1200);
+    }
   } catch (e) {
     console.error(e);
     el.progress.classList.add('hidden');
